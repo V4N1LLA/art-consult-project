@@ -1,5 +1,3 @@
-// backend/models/User.js
-
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
@@ -9,24 +7,19 @@ const UserSchema = new mongoose.Schema(
     email:    { type: String, required: true, unique: true },
     password: { type: String, required: true },
   },
-  { timestamps: true }  // 생성 및 업데이트 시간을 자동으로 기록
+  { timestamps: true }
 );
 
-// 저장 전 비밀번호 암호화 (비밀번호가 변경되었을 경우에만)
+// 비밀번호 해싱: pre('save') 훅
 UserSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
-  try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (err) {
-    next(err);
-  }
+  this.password = await bcrypt.hash(this.password, 10);
+  next();
 });
 
-// 입력한 비밀번호와 저장된 해시된 비밀번호 비교하는 메서드
-UserSchema.methods.comparePassword = async function (candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
+// 비밀번호 비교 메서드
+UserSchema.methods.comparePassword = function (candidatePassword) {
+  return bcrypt.compare(candidatePassword, this.password);
 };
 
 module.exports = mongoose.model('User', UserSchema);
